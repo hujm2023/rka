@@ -19,8 +19,3 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-
-Scope: This license applies to RKA's original application code and documentation.
-Third-party learning materials, questions, reference answers and notices under
-content/ retain their respective licenses and rights. See content/README.md and
-content/licenses/; some materials are restricted to non-commercial use.

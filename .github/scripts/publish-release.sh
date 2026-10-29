@@ -3,7 +3,7 @@ set -euo pipefail
 version="${RELEASE_TAG#v}"
 bundle="rka-${RELEASE_TAG}-deploy"
 mkdir -p "data/release/$bundle/docker" "data/release/$bundle/scripts" "data/release/$bundle/content"
-cp docker-compose.yml USER_GUIDE.md LICENSE "data/release/$bundle/"
+cp docker-compose.yml USER_GUIDE.md LICENSE NOTICE.md "data/release/$bundle/"
 cp docker/*.md "data/release/$bundle/docker/"
 cp scripts/backup.sh "data/release/$bundle/scripts/"
 cp -R content/licenses "data/release/$bundle/content/"

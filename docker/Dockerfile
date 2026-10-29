@@ -29,7 +29,7 @@ WORKDIR /app
 COPY --from=gobuild /out/rka /usr/local/bin/rka
 COPY --from=web /build/dist ./dist
 COPY content ./content
-COPY LICENSE ./LICENSE
+COPY LICENSE NOTICE.md ./
 COPY docker/rka.env.example ./deploy/rka.env.example
 ENV RKA_ADDR=0.0.0.0:8080 \
     RKA_STATIC_DIR=/app/dist \
