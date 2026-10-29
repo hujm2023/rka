@@ -34,6 +34,7 @@ const (
 // stream stays a closed protocol.
 const (
 	EventAccepted  = "accepted"
+	EventProgress  = "progress"
 	EventDelta     = "delta"
 	EventCitation  = "citation"
 	EventQuestion  = "question"
@@ -48,6 +49,7 @@ var allowedKinds = map[string]bool{
 }
 
 var allowedEventTypes = map[string]bool{
+	EventProgress: true,
 	EventAccepted: true, EventDelta: true, EventCitation: true, EventQuestion: true,
 	EventDone: true, EventError: true, EventCancelled: true,
 }
@@ -820,19 +822,22 @@ func (s *Service) RequeueTask(ctx context.Context, taskID, workerID string, back
 	if backoff < 0 {
 		backoff = 0
 	}
-	tag, err := s.db.Pool.Exec(ctx, `
+	return s.db.Tx(ctx, func(tx pgx.Tx) error {
+		tag, err := tx.Exec(ctx, `
 		update ai_tasks set status = 'queued', lease_owner = '', upstream_started=false,
             teaching_turn_id='',teaching_session_id='',upstream_seq=0,upstream_waiting=false,resume_turn=false,
 			lease_until = now() + make_interval(secs => $3),
 			error_code = $4, error_message = $5
 		where id = $1::uuid and lease_owner = $2`, taskID, workerID, int(backoff.Seconds()), code, message)
-	if err != nil {
+		if err != nil {
+			return err
+		}
+		if tag.RowsAffected() == 0 {
+			return ErrLeaseLost
+		}
+		_, err = appendEventTx(ctx, tx, taskID, EventProgress, map[string]any{"message": "上游暂时中断，正在自动重试…", "retrying": true})
 		return err
-	}
-	if tag.RowsAffected() == 0 {
-		return ErrLeaseLost
-	}
-	return nil
+	})
 }
 
 // MarkRecovering parks a task until the upstream turn can be checked again.

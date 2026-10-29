@@ -4,7 +4,7 @@ import * as Dialog from '@radix-ui/react-dialog';
 import {ArrowUp,Square,Sparkles,X,BookOpen,Settings2,RotateCcw,AlertTriangle} from 'lucide-react';
 import {useApp} from '../context';
 import {db} from '../db';
-import {askAI,buildMessages,consumeAIResponse} from '../ai';
+import {askAI,buildMessages} from '../ai';
 import {apiGet,apiPost,errorText,streamSse} from '../api';
 import {newId} from '../id';
 import {Markdown,Button,Badge} from '../ui';
@@ -26,6 +26,8 @@ function Conversation({context,catalog,settings,apiKey}:{context:NonNullable<Ret
   const serverMode=isServerEndpoint(settings.endpoint);
   const [messages,setMessages]=useState<ChatMessage[]>([]),[input,setInput]=useState(''),[busy,setBusy]=useState(false),[stream,setStream]=useState(''),[error,setError]=useState(''),[loaded,setLoaded]=useState(false);
   const [status,setStatus]=useState<AIStatus|null>(null),[citations,setCitations]=useState<Citation[]>([]),[taskId,setTaskId]=useState(''),[lastSeq,setLastSeq]=useState(0),[waitingQuestion,setWaitingQuestion]=useState('');
+  const [progress,setProgress]=useState('任务已提交，等待执行…'),[elapsed,setElapsed]=useState(0);
+  useEffect(()=>{if(!busy)return;const started=Date.now();setElapsed(0);const timer=setInterval(()=>setElapsed(Math.floor((Date.now()-started)/1000)),1000);return()=>clearInterval(timer);},[busy]);
   const controller=useRef<AbortController|null>(null),alive=useRef(true),scroll=useRef<HTMLDivElement>(null),busyRef=useRef(false),idempotency=useRef(''),streamTextRef=useRef(''),lastSeqRef=useRef(0),citationsRef=useRef<Citation[]>([]);
   useEffect(()=>{alive.current=true;db.chats.get(context.id).then(chat=>{if(alive.current){setMessages(chat?.messages||[]);setLoaded(true);}}).catch(()=>setLoaded(true));return()=>{alive.current=false;controller.current?.abort();};},[context.id]);
   useEffect(()=>{if(!serverMode)return;let active=true;apiGet<AIStatus>('/api/ai/status').then(value=>{if(active)setStatus(value);}).catch(()=>{if(active)setStatus(null);});return()=>{active=false;};},[serverMode]);
@@ -66,7 +68,11 @@ function Conversation({context,catalog,settings,apiKey}:{context:NonNullable<Ret
           if(typeof data.seq==='number'){seq=data.seq;lastSeqRef.current=data.seq;setLastSeq(data.seq);}
           const type=data.type||event.event;
           const payload=(data.payload||{}) as Record<string,unknown>;
-          if(type==='delta'){
+          if(type==='progress'){
+            if(typeof payload.message==='string')setProgress(payload.message);
+          }else if(type==='accepted'){
+            setProgress('任务已提交，等待执行…');
+          }else if(type==='delta'){
             const text=typeof payload.text==='string'?payload.text:'';
             if(text){streamTextRef.current+=text;if(streamTextRef.current.trim())context.onHint?.();setStream(streamTextRef.current);}
           }else if(type==='citation'){
@@ -81,7 +87,8 @@ function Conversation({context,catalog,settings,apiKey}:{context:NonNullable<Ret
             finished=true;appendAssistant(streamTextRef.current.trim()||'（任务已完成，但没有返回文本。）',citationsRef.current);
             setWaitingQuestion('');
           }else if(type==='error'){
-            finished=true;setError(String(payload.message||payload.reason||'AI 任务失败。'));
+            if(payload.recovering){setProgress('连接中断，正在恢复当前回答…');}
+            else{finished=true;setError(String(payload.message||payload.reason||'AI 任务失败。'));}
           }else if(type==='cancelled'){
             finished=true;appendAssistant(streamTextRef.current.trim()||'任务已取消。',citationsRef.current);
           }
@@ -121,7 +128,7 @@ function Conversation({context,catalog,settings,apiKey}:{context:NonNullable<Ret
 
   async function send(text:string){
     if(!text.trim()||busyRef.current||!loaded||!serverMode&&!settings.endpoint.trim())return;
-    busyRef.current=true;setBusy(true);setError('');setStream('');streamTextRef.current='';setCitations([]);citationsRef.current=[];setWaitingQuestion('');
+    busyRef.current=true;setBusy(true);setProgress('任务已提交，等待执行…');setError('');setStream('');streamTextRef.current='';setCitations([]);citationsRef.current=[];setWaitingQuestion('');
     const user:ChatMessage={id:newId(),role:'user',content:text.trim(),createdAt:new Date().toISOString()};
     setInput('');
     if(serverMode){await sendServer(text.trim(),!!taskId);return;}
@@ -154,7 +161,7 @@ function Conversation({context,catalog,settings,apiKey}:{context:NonNullable<Ret
     {serverMode&&status?.teaching&&status.teaching.configured===false&&<div className="ai-task-note">教学服务尚未配置{status.teaching.reason?`（${status.teaching.reason}）`:''}；任务将由服务器模型网关直接执行。</div>}
     <div className="chat-scroll" ref={scroll}>{!messages.length&&<div className="ai-welcome"><div className="sparkle-orbit"><Sparkles size={30}/></div><h3>{context.hint?'先给一点启发':'从这里开始，一起理解'}</h3><p>我会结合当前{context.kind==='question'?'题目':context.kind==='essay'?'论文草稿':context.kind==='case'?'案例作答':'知识章节'}，解释概念、提供反馈，并给出参考资料。</p><div className="prompt-list">{prompts.map(prompt=><button key={prompt} disabled={busy||!loaded} onClick={()=>void send(prompt)}>{prompt}<ArrowUp size={15}/></button>)}</div><Link to="/settings" onClick={()=>setAI(null)} className="text-link"><Settings2 size={14}/> 首次使用？配置 AI 接口</Link></div>}
       {messages.map(message=><div className={`chat-message ${message.role}`} key={message.id}><div className="message-label">{message.role==='user'?'你':'学习搭子'}</div><Markdown>{message.content}</Markdown>{message.sources&&<div className="citations">{message.sources.filter(source=>source.materialId||message.content.includes(`[${source.id}]`)).map(source=>source.materialId?<Link key={source.id} to="/knowledge" search={{id:source.materialId,...(source.materialVersionId?{version:source.materialVersionId}:{}),...(source.sectionId?{section:source.sectionId}:{})}} onClick={()=>setAI(null)}><BookOpen size={12}/> [{source.id}] {source.title}</Link>:<span key={source.id}>[{source.id}] {source.title}</span>)}</div>}</div>)}
-      {(busy||stream)&&<div className="chat-message assistant streaming"><div className="message-label">学习搭子 {busy&&<span className="typing-dots">•••</span>}</div><Markdown>{stream||'正在检查任务与资料…'}</Markdown>{waitingQuestion&&<p className="ai-waiting-question">{waitingQuestion}</p>}</div>}
+      {(busy||stream)&&<div className="chat-message assistant streaming"><div className="message-label">学习搭子 {busy&&<span className="typing-dots">•••</span>}</div><Markdown>{stream||progress}</Markdown>{busy&&!stream&&<p className="ai-task-note" role="status">已等待 {elapsed} 秒{elapsed>=30?' · 耗时较长，你可以停止生成。':''}</p>}{waitingQuestion&&<p className="ai-waiting-question">{waitingQuestion}</p>}</div>}
       {error&&<div className="inline-error" role="alert">{error}<Link to="/settings" onClick={()=>setAI(null)}>前往配置</Link></div>}
     </div>
     <form className="chat-composer" onSubmit={event=>{event.preventDefault();void send(input);}}><textarea aria-label="向 AI 提问" value={input} onChange={event=>setInput(event.target.value)} maxLength={12000} placeholder={taskId?'继续追问，或补充你的思路…':'说说你的思路，或继续追问…'} rows={2} onKeyDown={event=>{if(event.key==='Enter'&&!event.shiftKey&&!event.nativeEvent.isComposing){event.preventDefault();void send(input);}}}/><div><span>Enter 发送 · Shift Enter 换行</span>{busy?<Button type="button" variant="secondary" onClick={()=>void cancel()} aria-label="停止生成"><Square size={15}/></Button>:<Button aria-label="发送" disabled={!input.trim()||!loaded} type="submit"><ArrowUp size={18}/></Button>}</div></form>

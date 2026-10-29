@@ -142,6 +142,7 @@ services:
     environment:
       PUID: "1000"
       PGID: "1000"
+      TIKTOKEN_CACHE_DIR: /app/data/cache/tiktoken
     volumes:
       - ${RKA_DATA_HOST_DIR:-./data}/teaching:/app/data
     healthcheck:
@@ -157,11 +158,16 @@ services:
   deeptutor-init:
     image: ${RKA_DEEPTUTOR_IMAGE:-ghcr.io/hkuds/deeptutor:1.7.0}
     user: "0:0"
+    environment:
+      TIKTOKEN_CACHE_DIR: /app/data/cache/tiktoken
     entrypoint: ["/bin/sh", "-c"]
     command:
       - |
         set -e
         mkdir -p /app/data/user/settings
+        # Download before accepting turns: a synchronous first-use download
+        # otherwise blocks DeepTutor's heartbeat and expires its turn lease.
+        python -c 'import tiktoken; tiktoken.get_encoding("cl100k_base")'
         chown -R 1000:1000 /app/data
         if [ ! -f /app/data/user/settings/auth.json ]; then
           printf '%s\n' '{"enabled": true, "token_expire_hours": 24, "cookie_secure": false}' > /app/data/user/settings/auth.json

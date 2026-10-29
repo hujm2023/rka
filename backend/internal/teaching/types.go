@@ -56,7 +56,7 @@ type TurnRequest struct {
 }
 
 // Event is one normalized teaching event before it is persisted by the AI
-// task layer. Types are accepted/delta/citation/question/done/error/cancelled.
+// task layer. Types are accepted/progress/delta/citation/question/done/error/cancelled.
 type Event struct {
 	Type    string         `json:"type"`
 	Payload map[string]any `json:"payload"`

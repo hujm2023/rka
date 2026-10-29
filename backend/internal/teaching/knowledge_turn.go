@@ -13,10 +13,14 @@ import (
 func (s *Service) selectKnowledge(ctx context.Context, userID string, scope map[string]any) ([]string, error) {
 	material, _ := scope["materialId"].(string)
 	version, _ := scope["materialVersionId"].(string)
+	question, _ := scope["questionId"].(string)
 	rows, err := s.db.Pool.Query(ctx, `select distinct on (m.id) k.kb_name from knowledge_indexes k
   join material_versions v on v.id=k.material_version_id join materials m on m.id=v.material_id
-  where k.status='ready' and ($2='' or m.id=$2) and ($3='' or v.id::text=$3) and `+knowledgeAccess+`
-  order by m.id,v.version desc,k.created_at desc`, userID, material, version)
+  where k.status='ready' and ($2='' or m.id=$2) and ($3='' or v.id::text=$3)
+  and ($4='' or exists (select 1 from knowledge_links kl where kl.question_id=$4
+    and kl.material_version_id=v.id and kl.status in ('auto','approved')))
+  and `+knowledgeAccess+`
+  order by m.id,v.version desc,k.created_at desc`, userID, material, version, question)
 	if err != nil {
 		return nil, err
 	}

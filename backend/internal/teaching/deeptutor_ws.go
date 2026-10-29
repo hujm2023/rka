@@ -412,6 +412,29 @@ func (d *deepTutorWSBackend) Stream(ctx context.Context, req TurnRequest, ref Tu
 
 func consumeFrame(result *Result, frame dtFrame, emit func(Event) error) (bool, error) {
 	switch frame.Type() {
+	case "stage_start":
+		return false, emit(Event{Type: "progress", Payload: map[string]any{"message": "正在准备回答…"}})
+	case "progress":
+		// Never forward raw progress content: it may contain the whole prompt,
+		// internal tool arguments or model reasoning. Publish only safe stages.
+		meta := frame.Metadata()
+		message := ""
+		switch stringValue(meta, "call_kind") {
+		case "rag_retrieval":
+			switch stringValue(meta, "call_state") {
+			case "running":
+				message = "正在检索相关资料…"
+			case "complete":
+				message = "资料检索完成，正在准备回答…"
+			case "error":
+				message = "扩展检索暂不可用，正在结合已有资料回答…"
+			}
+		case "agent_loop_round":
+			message = "正在生成回答…"
+		}
+		if message != "" {
+			return false, emit(Event{Type: "progress", Payload: map[string]any{"message": message}})
+		}
 	case "session":
 		if id := frame.string("turn_id"); id != "" {
 			result.TurnID = id

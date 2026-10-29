@@ -225,7 +225,7 @@
 //      event: task  id: 14  data: {"seq":14,"type":"done","payload":{"status":"completed"}}
 ```
 
-事件类型：`accepted`、`delta`、`citation`、`question`（等待用户回答）、`done`、`error`、`cancelled`。事件 `seq` 单调递增且持久化，断线重连用 `after`/`Last-Event-ID` 补发。
+事件类型：`accepted`、`progress`（检索、生成或重试进度）、`delta`、`citation`、`question`（等待用户回答）、`done`、`error`、`cancelled`。事件 `seq` 单调递增且持久化，断线重连用 `after`/`Last-Event-ID` 补发。 `progress.payload.message` 是可展示的阶段说明，不包含原始提示词或模型推理；`error.payload.recovering=true` 表示任务仍在恢复，客户端应继续接收后续事件。
 
 规则：
 
