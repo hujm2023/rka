@@ -1,0 +1,81 @@
+/* Administrative surfaces share the study space's light/dark color tokens. */
+.admin-page .page-heading{margin-bottom:28px;align-items:center}
+.admin-page .page-heading h1{font-size:30px;letter-spacing:-.7px}
+.admin-page .page-heading p{font-size:13px;margin-top:8px}
+.admin-page .page-heading>.button{white-space:nowrap}
+.admin-page .admin-tabs{gap:6px;padding:6px;margin-bottom:26px;border:1px solid var(--line);border-radius:12px;background:var(--panel);width:fit-content;max-width:100%}
+.admin-page .admin-tabs button{padding:11px 20px;font-size:13px;border-radius:8px;white-space:nowrap}
+.admin-page .admin-tabs button:hover{background:var(--soft);color:var(--ink)}
+.admin-page .admin-tabs button.active{background:var(--sage);color:var(--accent);font-weight:600}
+.admin-page .admin-body{display:grid;gap:24px;min-width:0}
+.admin-page .admin-section{gap:24px;min-width:0}
+.admin-page .admin-section .panel,.admin-page .admin-overview{padding:26px}
+.admin-page .section-heading{margin-bottom:22px}
+.admin-page .section-heading h2,.admin-page .section-heading h3{font-size:16px;font-weight:600}
+.admin-page .section-heading p{font-size:12px;margin-top:6px}
+.admin-page .section-heading small{font-size:12px;color:var(--muted)}
+.admin-page .badge{display:inline-flex;align-items:center;gap:5px;padding:5px 9px;font-size:11px;white-space:nowrap}
+.admin-page .health-grid{gap:0}
+.admin-page .health-card{padding:4px 22px;border:0;border-right:1px solid var(--line);border-radius:0}
+.admin-page .health-card:first-child{padding-left:0}
+.admin-page .health-card:last-child{border-right:0}
+.admin-page .health-card-label{display:flex;align-items:center;gap:8px;color:var(--muted);margin-bottom:17px}
+.admin-page .health-card-label span{font-size:13px;margin:0;color:var(--ink)}
+.admin-page .health-card strong{display:flex;align-items:center;gap:7px;font-size:16px;font-weight:550;line-height:1.5}
+.admin-page .health-card small{display:block;color:var(--muted);font-size:11px;margin-top:8px}
+.admin-page .health-ok{color:var(--accent)}
+.admin-page .health-warn{color:var(--amber)}
+.admin-page .health-unknown{color:var(--muted)}
+.admin-page .admin-overview>.muted-text{margin-top:18px}
+.admin-page .knowledge-index-panel{padding:0;overflow:hidden;min-width:0}
+.admin-page .index-heading{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:25px 26px 20px}
+.admin-page .index-heading-copy{display:flex;align-items:center;gap:13px;min-width:0}
+.admin-page .admin-section-icon{display:grid;place-items:center;width:42px;height:42px;border-radius:11px;background:var(--sage);color:var(--accent);flex-shrink:0}
+.admin-page .index-heading h2{font-size:17px;font-weight:600}
+.admin-page .index-heading p{font-size:12px;color:var(--muted);margin-top:5px}
+.admin-page .index-heading>.button{white-space:nowrap;font-size:12px}
+.admin-page .index-summary{display:flex;align-items:center;gap:24px;margin:0 26px;padding:15px 18px;background:var(--soft);border:1px solid var(--line);border-radius:9px;font-size:12px;color:var(--muted);flex-wrap:wrap}
+.admin-page .index-summary>span{display:flex;align-items:center;gap:7px;white-space:nowrap}
+.admin-page .index-summary-total{padding-right:22px;border-right:1px solid var(--line)}
+.admin-page .index-summary-total strong{font-size:23px;color:var(--ink);font-weight:550;line-height:1}
+.admin-page .index-summary i{width:6px;height:6px;background:var(--muted);border-radius:50%}
+.admin-page .index-summary-ready{color:var(--accent)}
+.admin-page .index-summary-ready i{background:var(--accent)}
+.admin-page .index-summary-warning{color:var(--amber)}
+.admin-page .index-summary-warning i{background:var(--amber)}
+.admin-page .index-readiness{height:5px;background:var(--line);border-radius:4px;overflow:hidden;width:110px;margin-left:auto}
+.admin-page .index-readiness span{height:100%;display:block;background:var(--accent);border-radius:4px}
+.admin-page .index-toolbar{display:flex;align-items:center;gap:12px;padding:22px 26px}
+.admin-page .index-toolbar .search-field{width:320px;max-width:100%}
+.admin-page .index-toolbar select{width:150px;font-size:12px;min-height:41px}
+.admin-page .admin-table-wrap{border:1px solid var(--line);border-radius:9px}
+.admin-page .admin-table{font-size:13px}
+.admin-page .admin-table th{padding:13px 16px;font-size:11px;letter-spacing:.4px}
+.admin-page .admin-table td{padding:16px;line-height:1.7}
+.admin-page .admin-table tbody tr:last-child td{border-bottom:0}
+.admin-page .admin-table tbody tr:hover{background:var(--soft)}
+.admin-page .admin-table .button{padding:7px 11px;font-size:11px}
+.admin-page .admin-table td>.button+.button{margin-left:8px}
+.admin-page .knowledge-index-panel>.admin-table-wrap{border-radius:0;border-left:0;border-right:0}
+.admin-page .index-table{table-layout:fixed;min-width:760px}
+.admin-page .index-name-col{width:40%}
+.admin-page .index-status-col{width:14%}
+.admin-page .index-note-col{width:28%}
+.admin-page .index-action-col{width:18%}
+.admin-page .index-table th:first-child,.admin-page .index-table td:first-child{padding-left:26px}
+.admin-page .index-table th:last-child,.admin-page .index-table td:last-child{padding-right:26px;text-align:right}
+.admin-page .index-document{display:flex;align-items:center;gap:12px}
+.admin-page .index-document strong{font-weight:500;font-size:13px;overflow-wrap:anywhere}
+.admin-page .index-file-icon{display:grid;place-items:center;width:32px;height:36px;border:1px solid var(--line);border-radius:7px;color:var(--muted);flex-shrink:0;background:var(--panel)}
+.admin-page .index-note{color:var(--muted);font-size:12px}
+.admin-page .index-error{font-size:12px;color:var(--amber);overflow-wrap:anywhere}
+.admin-page .index-row-actions{display:flex;gap:8px;align-items:center;justify-content:flex-end;flex-wrap:wrap}
+.admin-page .index-row-actions .text-link{font-size:12px;white-space:nowrap}
+.admin-page .index-pagination{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:18px 26px;color:var(--muted);font-size:12px}
+.admin-page .index-pagination>div{display:flex;align-items:center;gap:14px;font-variant-numeric:tabular-nums}
+.admin-page .index-pagination .button{padding:7px;min-height:32px;border-radius:7px}
+.admin-page .index-empty{padding:48px 20px;text-align:center;font-size:13px;color:var(--muted)}
+.admin-page .knowledge-index-panel>.inline-error{margin:18px 26px 0}
+@media(max-width:1200px){.admin-page .health-card{padding-inline:14px}.admin-page .health-card strong{font-size:14px}.admin-page .admin-tabs button{padding-inline:14px}.admin-page .index-summary{gap:16px}.admin-page .index-readiness{display:none}}
+@media(max-width:950px){.admin-page .health-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:22px 0}.admin-page .health-card:nth-child(3){border:0}.admin-page .health-card:nth-child(4){padding-left:0}.admin-page .health-card-label{margin-bottom:10px}}
+@media(max-width:700px){.admin-page .page-heading{align-items:flex-start;display:flex;gap:14px}.admin-page .page-heading h1{font-size:25px}.admin-page .page-heading>.button{font-size:11px;padding:10px;margin-top:25px}.admin-page .admin-tabs{width:100%;flex-wrap:nowrap;overflow-x:auto}.admin-page .admin-tabs button{font-size:12px;padding:10px 14px}.admin-page .admin-section .panel,.admin-page .admin-overview{padding:20px}.admin-page .health-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.admin-page .health-card:nth-child(3){border-right:1px solid var(--line)}.admin-page .health-card:nth-child(even){border:0;padding-left:14px}.admin-page .health-card:nth-child(odd){padding-left:0}.admin-page .health-card:last-child{border:0}.admin-page .index-heading{padding:20px;flex-wrap:wrap;gap:16px}.admin-page .index-heading p{font-size:11px}.admin-page .index-summary{margin:0 20px;padding:14px;gap:14px;font-size:11px}.admin-page .index-summary-total{padding-right:14px}.admin-page .index-toolbar{padding:18px 20px;flex-wrap:wrap}.admin-page .index-toolbar .search-field{width:100%}.admin-page .index-toolbar select{width:100%}.admin-page .index-pagination{padding:16px 20px;font-size:11px}.admin-page .index-pagination>div{gap:10px}.admin-page .knowledge-index-panel>.inline-error{margin-inline:20px}}
