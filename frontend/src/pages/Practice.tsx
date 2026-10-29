@@ -50,7 +50,8 @@ export function Practice(){
   const [clockOffset,setClockOffset]=useState(0);
   const sessionRef=useRef<ServerSession|null>(null),setupRef=useRef(showSetup),started=useRef(Date.now()),submitLock=useRef(false),startBusy=useRef(false),autoHandled=useRef(''),noteTimer=useRef<number|undefined>(undefined);
   useEffect(()=>{setMarks(contextMarks);},[contextMarks]);
-  useEffect(()=>{sessionRef.current=session??null;setupRef.current=showSetup;},[session,showSetup]);
+  const pendingChoices=useRef(0);
+  useEffect(()=>{setupRef.current=showSetup;},[showSetup]);
 
   useEffect(()=>{
     let alive=true;
@@ -61,12 +62,12 @@ export function Practice(){
         const cached=await cacheGet<ServerSession>('session:active');
         if(!alive) return;
         const merged=mergeLocalAnswerStates(active,cached?.value);
-        setSession(merged);
+        sessionRef.current=merged;setSession(merged);
         if(merged) await cachePut('session:active',merged);
       }catch(caught){
         const cached=await cacheGet<ServerSession>('session:active');
         if(!alive) return;
-        if(cached?.value){setSession(cached.value);notify('网络不可用：已从本地缓存恢复练习现场。');}
+        if(cached?.value){sessionRef.current=cached.value;setSession(cached.value);notify('网络不可用：已从本地缓存恢复练习现场。');}
         else{setSession(null);setPageError(`练习现场读取失败：${errorText(caught)}`);}
       }
       const offset=await syncServerClock();if(alive) setClockOffset(offset);
@@ -78,20 +79,27 @@ export function Practice(){
 
   const update=(next:ServerSession)=>{sessionRef.current=next;setSession(next);void cachePut('session:active',next);};
   const persistPosition=async(next:ServerSession)=>{
-    try{const raw=await apiPatch<unknown>(`/api/practice/sessions/${next.id}`,{index:next.index,elapsedSeconds:next.elapsedSeconds,version:next.version});const authoritative=normalizeSession(raw);if(authoritative)update(authoritative);}
+    try{const raw=await apiPatch<unknown>(`/api/practice/sessions/${next.id}`,{index:next.index,elapsedSeconds:next.elapsedSeconds,version:next.version});const authoritative=normalizeSession(raw);if(authoritative&&sessionRef.current?.id===next.id&&authoritative.version>=sessionRef.current.version){
+        const latest=sessionRef.current;
+        const merged=mergeLocalAnswerStates(authoritative,latest)!;
+        // A position acknowledgement must not erase choices made while it was in flight.
+        if(latest.index!==next.index)merged.index=latest.index;
+        merged.elapsedSeconds=Math.max(merged.elapsedSeconds,latest.elapsedSeconds);
+        update(merged);
+      }}
     catch(caught){
       if(caught instanceof ApiError&&caught.status===409){await reloadSession(next.id,'学习位置已在另一台设备更新，已恢复服务器现场。');}
     }
   };
   async function reloadSession(id:string,message?:string){
-    try{const raw=await apiGet<unknown>(`/api/practice/sessions/${id}`);const next=normalizeSession(raw);if(next){update(next);if(message)notify(message);}}
+    try{const raw=await apiGet<unknown>(`/api/practice/sessions/${id}`);const next=normalizeSession(raw);if(next&&sessionRef.current?.id===id){update(mergeLocalAnswerStates(next,sessionRef.current)!);if(message)notify(message);}}
     catch{/* offline keeps local position */}
   }
 
   useEffect(()=>{
     const tick=setInterval(()=>{
       const current=sessionRef.current;
-      if(!current||current.finished||document.hidden||setupRef.current) return;
+      if(!current||current.finished||document.hidden||setupRef.current||pendingChoices.current) return;
       const next={...current,elapsedSeconds:current.elapsedSeconds+1};
       sessionRef.current=next;setSession(next);
       if(next.elapsedSeconds%10===0) void persistPosition(next);
@@ -137,7 +145,21 @@ export function Practice(){
 
   useEffect(()=>{started.current=Date.now();setAI(null);const frame=requestAnimationFrame(()=>{const element=document.querySelector('.question-topline');if(element)window.scrollTo({top:Math.max(0,element.getBoundingClientRect().top+window.scrollY-25),behavior:'instant'});});return()=>cancelAnimationFrame(frame);},[q?.id,setAI]);
 
-  function choose(key:Option){const current=sessionRef.current;if(!current||!q||current.answers[q.id]?.submitted)return;update({...current,answers:{...current.answers,[q.id]:{...current.answers[q.id],selected:key}}});}
+  async function choose(key:Option){
+    const current=sessionRef.current;
+    if(!current||!q||current.answers[q.id]?.submitted)return;
+    const next={...current,answers:{...current.answers,[q.id]:{...current.answers[q.id],selected:key}}};
+    sessionRef.current=next;pendingChoices.current++;
+    try{
+      // A visible selected option acknowledges a durable local draft, so an
+      // immediate refresh cannot interrupt its IndexedDB transaction.
+      await cachePut('session:active',next);
+      if(sessionRef.current===next)setSession(next);
+    }catch(caught){
+      if(sessionRef.current===next)setSession(next);
+      setPageError(`选择暂未保存到本地：${errorText(caught)}`);
+    }finally{pendingChoices.current--;}
+  }
   function move(delta:number){const current=sessionRef.current;if(!current||saving)return;const index=current.index+delta;if(index>=0&&index<current.questionIds.length){update({...current,index});void persistPosition({...current,index});}}
 
   async function submit(){
