@@ -18,7 +18,7 @@
     "@tanstack/react-router": "^1.0.0",
     "dexie": "^4.0.0",
     "dexie-react-hooks": "latest",
-    "katex": "^0.16.0",
+    "katex": "^0.18.2",
     "lucide-react": "latest",
     "mermaid": "^12.2.0",
     "react": "^19.0.0",
