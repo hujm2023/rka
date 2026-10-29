@@ -7,9 +7,10 @@ ifneq ($(strip $(RKA_SECRET_KEY_FILE)),)
 override export RKA_SECRET_KEY_FILE := $(abspath $(RKA_SECRET_KEY_FILE))
 endif
 
-.PHONY: help build vet test test-integration test-platform test-legacy fmt web frontend-install frontend-dev frontend-test typecheck dev-db migrate serve worker init import-content content backup verify-backup restore retention doctor compose-up compose-down compose-logs e2e
+.PHONY: help run build vet test test-integration test-platform test-legacy fmt web frontend-install frontend-dev frontend-test typecheck dev-db migrate serve worker init import-content content backup verify-backup restore retention doctor compose-up compose-down compose-logs e2e
 
 help:
+	@echo "run — prepare configuration, build/start all services, and open the website"
 	@echo "build / vet / test / test-platform / fmt — delegate to backend/"
 	@echo "frontend-install / frontend-dev / web / frontend-test / typecheck — frontend/"
 	@echo "dev-db / init / serve / worker / migrate / import-content — local development"
@@ -20,6 +21,9 @@ help:
 
 build vet test test-integration test-platform test-legacy fmt migrate serve worker init import-content verify-backup restore retention doctor:
 	$(MAKE) -C backend $@ ARGS="$(ARGS)"
+
+run:
+	@scripts/run.sh
 
 frontend-install:
 	npm --prefix frontend ci
