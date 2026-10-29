@@ -186,3 +186,32 @@ test('gateway read failures are explicit and fit a dark mobile screen', async ({
   await expect(section).toContainText('服务器尚未配置网关');
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
+
+test('long-running AI shows progress, elapsed time and recoverable reconnects', async ({page}) => {
+  await page.clock.install();
+  await signInIsolatedLearner(page, 'ai-progress');
+  await page.goto('/practice');
+  await startPractice(page);
+  await page.route('**/api/ai/status',route=>route.fulfill({json:statusConfigured}));
+  await page.route('**/api/ai/tasks',route=>route.fulfill({status:201,json:{task:{id:'progress-task'}}}));
+  let next!:()=>void;
+  const hold=new Promise<void>(resolve=>{next=resolve;});
+  let calls=0;
+  await page.route('**/api/ai/tasks/progress-task/events*',async route=>{
+    if(++calls===1)return route.fulfill({contentType:'text/event-stream',body:sse(1,'progress',{message:'正在检索相关资料…'})});
+    await hold;
+    return route.fulfill({contentType:'text/event-stream',body:sse(2,'error',{recovering:true,message:'temporary disconnect'})+sse(3,'progress',{message:'连接恢复，正在生成回答…'})+sse(4,'delta',{text:'从场景变化对架构的影响入手。'})+sse(5,'done',{status:'completed'})});
+  });
+  await page.getByRole('button',{name:'给我一点提示',exact:true}).click();
+  await page.getByRole('button',{name:'这题考查哪个概念？',exact:true}).click();
+  await expect(page.locator('.chat-message.streaming')).toContainText('正在检索相关资料');
+  await expect(page.locator('.ai-panel [role="status"]')).toContainText('已等待');
+  await page.clock.fastForward(31_000);
+  await expect(page.locator('.ai-panel [role="status"]')).toContainText('已等待 31 秒');
+  await expect(page.locator('.ai-panel [role="status"]')).toContainText('你可以停止生成');
+  await page.screenshot({path:test.info().outputPath('ai-progress.png'),animations:'disabled'});
+  next();
+  await expect(page.locator('.chat-message.assistant').last()).toContainText('从场景变化对架构的影响入手');
+  await expect(page.locator('.ai-panel .inline-error')).toHaveCount(0);
+  await expect(page.getByRole('button',{name:'停止生成',exact:true})).toHaveCount(0);
+});

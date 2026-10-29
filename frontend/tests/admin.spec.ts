@@ -13,14 +13,16 @@ test('administrators can open the console and every status is shown separately',
   await expect(page.getByRole('tab', {name: '状态', exact: true})).toBeVisible();
 
   // Health dimensions are separate cards with their own state, not one boolean.
-  const health = page.locator('.health-grid');
   await expect(page.locator('.health-card')).toHaveCount(5);
-  for (const key of ['process', 'database', 'teaching', 'model', 'index']) {
-    await expect(health).toContainText(key);
-  }
-  await expect(health).toContainText('ok');
+  const labels:Record<string,string>={process:'应用服务',database:'数据库',teaching:'教学服务',model:'模型网关',index:'知识索引'};
+  const states:Record<string,string>={ok:'运行正常',ready:'已就绪',healthy:'运行正常',degraded:'需关注',failed:'异常',error:'异常',unconfigured:'未配置',unknown:'待确认',disabled:'已停用',unavailable:'不可用'};
   const currentStatus=await (await page.request.get('/api/admin/status')).json();
-  for(const [key,value] of Object.entries(currentStatus.checks)){await expect(page.locator('.health-card').filter({hasText:key})).toContainText(String(value));}
+  for(const [key,label] of Object.entries(labels)){
+    const card=page.locator('.health-card').filter({hasText:label});
+    await expect(card).toHaveCount(1);
+    const value=String(currentStatus.checks[key]??'unknown');
+    await expect(card.locator('strong')).toContainText(states[value]||value);
+  }
 
   // Model configuration separates configured / connection / capability status.
   // A config is created through the public admin API so the three states are

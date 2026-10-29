@@ -10,6 +10,35 @@
 
 Go 应用、Worker、PostgreSQL、DeepTutor 和 Embedding 均通过容器运行，无需分别安装这些运行环境。首次下载镜像和 Embedding 模型可能需要较长时间。
 
+## 一条命令启动
+
+安装并启动 Docker（包含 Compose v2）后，在项目根目录执行：
+
+```bash
+make run
+```
+
+该命令会依次完成：
+
+1. 检查 Docker 与 Compose 是否可用。
+2. 首次从 `.env.example` 生成权限为 `600` 的 `.env`，创建独立随机数据库密码和管理员密码；已有文件保持原样。
+3. 构建前后端镜像，拉取缺失的依赖镜像，初始化数据目录、密钥、数据库和内容。
+4. 准备分词资源与 Embedding 模型，等待各容器的健康检查通过。
+5. 打开浏览器。首次登录账号为 `admin@example.com`，密码见 `.env` 中的 `RKA_ADMIN_PASSWORD`。
+
+只需 Make、Bash 和 Docker，无需在宿主机安装 Node.js、Go 或 PostgreSQL。AI 模型凭据需要自行配置；知识索引会在后台继续处理。命令不会安装系统软件或重置已有账号。
+
+无图形界面的服务器会打印访问链接。默认地址根据实际映射端口生成；如果使用域名或反向代理，在 `.env` 设置 `RKA_OPEN_URL=https://your-domain.example/`。也可通过环境变量控制启动：
+
+```bash
+RKA_OPEN_BROWSER=0 make run       # 启动后不打开浏览器
+RKA_RUN_BUILD=0 make run          # 使用已有镜像，不强制重新构建
+RKA_RUN_TIMEOUT=1800 make run     # 服务就绪等待上限，单位秒，默认 900
+BROWSER=firefox make run          # 指定浏览器可执行文件或包装脚本
+```
+
+以下步骤适用于希望手动配置、启动的部署方式。
+
 ## 获取项目与配置
 
 ```bash

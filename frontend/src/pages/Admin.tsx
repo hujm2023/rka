@@ -1,6 +1,7 @@
+import '../admin.css';
 import {KnowledgeIndexes} from '../components/KnowledgeIndexes';
 import {useEffect,useState,type FormEvent} from 'react';
-import {Activity,AlertTriangle,Archive,ClipboardList,DatabaseBackup,Plus,RefreshCw,ShieldCheck,Trash2,UserPlus,Users} from 'lucide-react';
+import {Activity,AlertTriangle,Archive,ClipboardList,DatabaseBackup,Plus,RefreshCw,ShieldCheck,Trash2,UserPlus,Users,Server,Database,BrainCircuit,Network,BookOpen,CheckCircle2} from 'lucide-react';
 import {useAuth} from '../auth';
 import {api,apiDelete,apiGet,apiPatch,apiPost,apiPut,errorText} from '../api';
 import {Badge,Button,Empty,Loading,PageTitle} from '../ui';
@@ -12,7 +13,7 @@ const listOf=(raw:unknown,key:string):Record<string,unknown>[]=>{
   if(raw&&typeof raw==='object'){const value=(raw as Record<string,unknown>)[key];if(Array.isArray(value))return value.filter((item):item is Record<string,unknown>=>!!item&&typeof item==='object');}
   return [];
 };
-const statusTone=(value:unknown)=>value==='ok'||value==='ready'||value==='active'||value==='verified'||value==='completed'?'green':value==='failed'||value==='error'||value==='disabled'?'amber':'neutral';
+const statusTone=(value:unknown)=>value==='ok'||value==='ready'||value==='active'||value==='verified'||value==='completed'?'green':value==='failed'||value==='error'||value==='disabled'||value==='degraded'?'amber':'neutral';
 const stamp=(value:unknown)=>{const text=String(value||'');return text?text.slice(0,19).replace('T',' '):'—';};
 
 export function Admin(){
@@ -35,7 +36,7 @@ export function Admin(){
   };
   useEffect(()=>{void load(tab);},[tab]);
   if(!capabilities.admin) return <div className="page-enter"><PageTitle eyebrow="ADMIN" title="管理后台" description="只有管理员可以访问此页面。"/><Empty title="没有访问权限">请联系管理员开通管理权限。</Empty></div>;
-  return <div className="page-enter admin-page"><PageTitle eyebrow="ADMIN CONSOLE" title="平台管理" description="账号、授权、模型、任务、审计与备份集中管理；状态分开显示，失败原因保持可见。"/><div className="admin-tabs" role="tablist" aria-label="管理后台栏目">{tabs.map(([key,label])=><button role="tab" aria-selected={tab===key} key={key} className={tab===key?'active':''} onClick={()=>setTab(key)}>{label}</button>)}</div>{error&&<div className="inline-error" role="alert">{error}<button onClick={()=>void load()}>重新加载</button></div>}{notice&&<div className="inline-success" role="status">{notice}</div>}{loading?<Loading/>:<div className="admin-body">
+  return <div className="page-enter admin-page"><PageTitle eyebrow="ADMIN CONSOLE" title="平台管理" description="查看服务运行情况，管理学习资料、成员与 AI 配置。" action={<Button variant="secondary" disabled={loading} onClick={()=>void load()}><RefreshCw size={15}/>刷新概览</Button>}/><div className="admin-tabs" role="tablist" aria-label="管理后台栏目">{tabs.map(([key,label])=><button role="tab" aria-selected={tab===key} key={key} className={tab===key?'active':''} onClick={()=>setTab(key)}>{label}</button>)}</div>{error&&<div className="inline-error" role="alert">{error}<button onClick={()=>void load()}>重新加载</button></div>}{notice&&<div className="inline-success" role="status">{notice}</div>}{loading?<Loading/>:<div className="admin-body">
     {tab==='overview'&&<><Overview data={data}/><KnowledgeIndexes admin/></>}
     {tab==='users'&&<UsersPanel data={data} reload={()=>void load('users')} notify={setNotice} error={setError}/>}
     {tab==='grants'&&<GrantsPanel data={data} reload={()=>void load('grants')} notify={setNotice} error={setError}/>}
@@ -48,8 +49,9 @@ export function Admin(){
 
 function Overview({data}:{data:Record<string,unknown>}){
   const checks=data.checks&&typeof data.checks==='object'?data.checks as Record<string,unknown>:{};
-  const keys=['process','database','teaching','model','index'];
-  return <div className="admin-section"><section className="panel"><div className="section-heading"><h3><Activity size={17}/> 服务健康</h3><Badge tone={statusTone(data.status)}>{String(data.status||'未知')}</Badge></div><div className="health-grid">{keys.map(key=><div className="health-card" key={key}><span>{key}</span><strong>{String(checks[key]??'—')}</strong></div>)}</div>{typeof data.version==='string'&&<p className="muted-text">版本 {data.version}</p>}</section></div>;
+  const services=[{key:'process',label:'应用服务',detail:'网站与接口',icon:Server},{key:'database',label:'数据库',detail:'学习记录与内容',icon:Database},{key:'teaching',label:'教学服务',detail:'AI 学习任务',icon:BrainCircuit},{key:'model',label:'模型网关',detail:'模型接口与调用',icon:Network},{key:'index',label:'知识索引',detail:'资料检索与引用',icon:BookOpen}];
+  const labels:Record<string,string>={ok:'运行正常',ready:'已就绪',healthy:'运行正常',degraded:'需关注',failed:'异常',error:'异常',unconfigured:'未配置',unknown:'待确认',disabled:'已停用',unavailable:'不可用'};
+  return <section className="panel admin-overview"><div className="section-heading"><div><h2><Activity size={18}/>服务概览</h2><p>应用、数据和 AI 服务的当前运行状态</p></div><Badge tone={statusTone(data.status)}>{labels[String(data.status)]||String(data.status||'待确认')}</Badge></div><div className="health-grid">{services.map(({key,label,detail,icon:Icon})=>{const value=String(checks[key]??'unknown');const healthy=['ok','ready','healthy'].includes(value);return <div className="health-card" key={key}><div className="health-card-label"><Icon size={17}/><span>{label}</span></div><strong className={healthy?'health-ok':value==='unknown'?'health-unknown':'health-warn'}>{healthy?<CheckCircle2 size={16}/>:<AlertTriangle size={16}/>} {labels[value]||value}</strong><small>{detail}</small></div>;})}</div>{typeof data.version==='string'&&<p className="muted-text">版本 {data.version}</p>}</section>;
 }
 
 function UsersPanel({data,reload,notify,error}:{data:Record<string,unknown>;reload:()=>void;notify:(text:string)=>void;error:(text:string)=>void}){

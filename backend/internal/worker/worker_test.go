@@ -293,6 +293,10 @@ func TestRetryableFailureRequeuesThenFailsAtCap(t *testing.T) {
 	if status != "queued" || errorCode != "model_upstream_error" || attempt != 1 {
 		t.Fatalf("after retryable failure: %s/%q/%d", status, errorCode, attempt)
 	}
+	if types := fixture.eventTypes(t, id); !contains(types, "progress") {
+		t.Fatalf("retry was not visible to the browser: %v", types)
+	}
+
 	time.Sleep(200 * time.Millisecond)
 	if processed, err := fixture.app.Worker.ProcessOne(t.Context()); err != nil || !processed {
 		t.Fatalf("second process = %v, %v", processed, err)

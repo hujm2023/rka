@@ -98,3 +98,14 @@ select option{background:var(--panel);color:var(--ink)}
 @media(max-width:700px){.device-row>div{width:100%}.device-row strong{white-space:normal;overflow-wrap:anywhere}.device-row span{overflow-wrap:anywhere}}
 
 .environment-strip{display:flex;align-items:center;gap:10px;flex-wrap:wrap;border:1px solid var(--line);background:var(--soft);border-radius:8px;padding:10px 13px;margin-bottom:14px;font-size:11px;color:var(--muted)}.environment-strip code{font-family:ui-monospace,monospace;color:var(--ink)}
+
+/* Keep practice actions in the viewport, independent of answer/notes length.
+   The portal avoids transformed page-animation ancestors trapping fixed UI. */
+:root{--practice-nav-sidebar:226px}
+body:has(.practice-page){padding-bottom:calc(92px + env(safe-area-inset-bottom,0px))}
+.question-navigation{position:fixed;inset:auto 0 0 var(--practice-nav-sidebar);display:block;z-index:30;margin:0;padding:0;border-top:1px solid var(--line);background:var(--panel);box-shadow:0 -5px 22px #00000008}
+.question-navigation-inner{display:flex;align-items:center;justify-content:space-between;gap:15px;max-width:1450px;margin:0 auto;padding:14px 40px calc(14px + env(safe-area-inset-bottom,0px))}
+.question-navigation-inner>.button{min-height:44px;width:140px;flex-shrink:0}
+@media(max-width:1200px){:root{--practice-nav-sidebar:206px}.question-navigation-inner{padding-inline:26px}}
+@media(max-width:950px){:root{--practice-nav-sidebar:190px}}
+@media(max-width:700px){:root{--practice-nav-sidebar:0px}.question-navigation-inner{padding:12px 19px calc(12px + env(safe-area-inset-bottom,0px))}.question-navigation-inner>.button{flex:1;min-width:0;max-width:160px;padding-inline:12px}}
