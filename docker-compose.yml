@@ -1,0 +1,207 @@
+# One Compose definition starts the whole platform.
+#
+#   cp .env.example .env    # set POSTGRES_PASSWORD and any model/teaching values
+#   docker compose up -d
+#   curl -fsS http://127.0.0.1:${RKA_PORT:-8080}/readyz
+#
+# Every persistent path is a bind mount under ./data. No anonymous volumes are
+# used for application data. The host needs only Docker and Compose.
+
+name: rka
+
+x-app: &app
+  image: rka:${RKA_IMAGE_TAG:-local}
+  build:
+    context: .
+    dockerfile: docker/Dockerfile
+  env_file:
+    - path: ./.env
+      required: false
+    - path: ./docker/rka.env
+      required: false
+  environment:
+    RKA_ADDR: 0.0.0.0:8080
+    RKA_DATA_DIR: /data
+    RKA_STATIC_DIR: /app/dist
+    RKA_CONTENT_SNAPSHOT: /app/content
+    RKA_SECRET_KEY_FILE: /data/secrets/secret-key
+    RKA_DATABASE_URL: postgres://rka:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in docker/rka.env}@postgres:5432/rka?sslmode=disable
+    RKA_DEEPTUTOR_URL: ${RKA_DEEPTUTOR_URL-http://deeptutor:8001}
+    RKA_DEEPTUTOR_ADMIN_USERNAME: ${RKA_DEEPTUTOR_ADMIN_USERNAME:-}
+    RKA_DEEPTUTOR_ADMIN_PASSWORD: ${RKA_DEEPTUTOR_ADMIN_PASSWORD:-}
+    RKA_EMBEDDING_URL: ${RKA_EMBEDDING_URL-http://embedding:80/v1/embeddings}
+    RKA_EMBEDDING_MODEL: ${RKA_EMBEDDING_MODEL:-Xenova/bge-small-zh-v1.5}
+    RKA_EMBEDDING_DIMS: ${RKA_EMBEDDING_DIMS:-512}
+    RKA_AI_ENDPOINT: ${RKA_AI_ENDPOINT:-}
+    RKA_AI_MODEL: ${RKA_AI_MODEL:-}
+    RKA_AI_API_KEY: ${RKA_AI_API_KEY:-}
+    RKA_AI_GATEWAY_NAME: ${RKA_AI_GATEWAY_NAME:-服务端 AI 网关}
+    RKA_AI_DAILY_BUDGET: ${RKA_AI_DAILY_BUDGET:-0}
+    RKA_AI_MAX_CONCURRENCY: ${RKA_AI_MAX_CONCURRENCY:-3}
+    RKA_AI_TIMEOUT: ${RKA_AI_TIMEOUT:-120s}
+    RKA_ADMIN_EMAIL: ${RKA_ADMIN_EMAIL:-}
+    RKA_ADMIN_PASSWORD: ${RKA_ADMIN_PASSWORD:-}
+    RKA_ADMIN_DISPLAY_NAME: ${RKA_ADMIN_DISPLAY_NAME:-}
+  volumes:
+    - ${RKA_DATA_HOST_DIR:-./data}:/data
+  restart: unless-stopped
+  logging:
+    driver: json-file
+    options:
+      max-size: 10m
+      max-file: "5"
+
+services:
+  postgres:
+    image: postgres:17.6-alpine
+    environment:
+      POSTGRES_USER: rka
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in docker/rka.env}
+      POSTGRES_DB: rka
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      # Keep the existing host layout, but mount PGDATA directly. A restored
+      # parent directory may be root-owned 0750 and cannot be traversed after
+      # the PostgreSQL entrypoint drops privileges.
+      - ${RKA_DATA_HOST_DIR:-./data}/postgres/pgdata:/var/lib/postgresql/data/pgdata
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U rka -d rka"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "5"
+
+  # One-shot, idempotent initialisation: data directories, secret key,
+  # bootstrap token, schema migrations, content snapshot, first administrator.
+  init:
+    <<: *app
+    command: ["init"]
+    restart: "no"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  app:
+    <<: *app
+    command: ["serve"]
+    ports:
+      - "${RKA_PORT:-8080}:8080"
+    depends_on:
+      init:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:8080/readyz >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      start_period: 30s
+      retries: 12
+
+  worker:
+    <<: *app
+    command: ["worker"]
+    healthcheck:
+      test: ["CMD", "rka", "worker-health"]
+      interval: 10s
+      timeout: 5s
+      start_period: 30s
+      retries: 3
+    depends_on:
+      init:
+        condition: service_completed_successfully
+
+  # Local Chinese embedding service (TEI), started by default.
+  # ONNX Chinese model, 512 dimensions; cached under the project data root.
+  embedding:
+    image: ${RKA_EMBEDDING_IMAGE:-ghcr.io/huggingface/text-embeddings-inference:cpu-1.9}
+    command: ["--model-id", "${RKA_EMBEDDING_MODEL_ID:-Xenova/bge-small-zh-v1.5}", "--port", "80"]
+    volumes:
+      - ${RKA_DATA_HOST_DIR:-./data}/cache:/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:80/health >/dev/null || exit 1"]
+      interval: 15s
+      timeout: 5s
+      start_period: 300s
+      retries: 20
+    deploy:
+      resources:
+        limits:
+          memory: 6G
+    restart: unless-stopped
+
+  # Independent teaching service, started by default.
+  # Verified against ghcr.io/hkuds/deeptutor:1.6.15: Next.js on 3782, FastAPI on
+  # 8001, health at /health/ready on 8001, all persistent state under /app/data.
+  deeptutor:
+    image: ${RKA_DEEPTUTOR_IMAGE:-ghcr.io/hkuds/deeptutor:1.6.15}
+    depends_on:
+      deeptutor-init:
+        condition: service_completed_successfully
+    environment:
+      PUID: "1000"
+      PGID: "1000"
+    volumes:
+      - ${RKA_DATA_HOST_DIR:-./data}/teaching:/app/data
+    healthcheck:
+      test: ["CMD-SHELL", "python /app/healthcheck.py"]
+      interval: 30s
+      timeout: 10s
+      start_period: 90s
+      retries: 5
+    restart: unless-stopped
+
+  # One-shot: DeepTutor authentication is configured by file, not environment.
+  # It writes auth.json before the teaching service accepts users.
+  deeptutor-init:
+    image: ${RKA_DEEPTUTOR_IMAGE:-ghcr.io/hkuds/deeptutor:1.6.15}
+    user: "0:0"
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        set -e
+        mkdir -p /app/data/user/settings
+        chown -R 1000:1000 /app/data
+        if [ ! -f /app/data/user/settings/auth.json ]; then
+          printf '%s\n' '{"enabled": true, "token_expire_hours": 24, "cookie_secure": false}' > /app/data/user/settings/auth.json
+        fi
+    volumes:
+      - ${RKA_DATA_HOST_DIR:-./data}/teaching:/app/data
+    restart: "no"
+
+  # Containerised model gateway. Enabled with COMPOSE_PROFILES=gateway.
+  # Verified against ghcr.io/yetone/magpie:0.1.1893. Calls from another container
+  # need a real gateway key; loopback token assumptions do not carry over.
+  magpie:
+    image: ${RKA_MAGPIE_IMAGE:-ghcr.io/yetone/magpie:0.1.1893}
+    profiles: ["gateway"]
+    depends_on:
+      magpie-init:
+        condition: service_completed_successfully
+    environment:
+      MAGPIE_ADDR: "0.0.0.0:3425"
+      MAGPIE_PUBLIC_URL: "http://magpie:3425"
+      MAGPIE_WEB_KEY: ${MAGPIE_WEB_KEY:-}
+    volumes:
+      - ${RKA_DATA_HOST_DIR:-./data}/gateway:/config
+    command: ["web", "--addr", "0.0.0.0:3430", "--no-open"]
+    healthcheck:
+      test: ["CMD", "/magpie", "healthcheck"]
+      interval: 30s
+      timeout: 5s
+      start_period: 15s
+      retries: 3
+    restart: unless-stopped
+
+  magpie-init:
+    image: postgres:17.6-alpine
+    profiles: ["gateway"]
+    user: "0:0"
+    entrypoint: ["/bin/sh", "-c"]
+    command: ["mkdir -p /config && chown -R 65532:65532 /config"]
+    volumes:
+      - ${RKA_DATA_HOST_DIR:-./data}/gateway:/config
+    restart: "no"
