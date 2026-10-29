@@ -10,7 +10,7 @@
 name: rka
 
 x-app: &app
-  image: rka:${RKA_IMAGE_TAG:-local}
+  image: ${RKA_IMAGE:-rka}:${RKA_IMAGE_TAG:-local}
   build:
     context: .
     dockerfile: docker/Dockerfile

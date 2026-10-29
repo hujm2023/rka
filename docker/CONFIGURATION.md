@@ -80,6 +80,7 @@
 
 | 变量 | 默认 | 说明 |
 | --- | --- | --- |
+| `RKA_IMAGE` | `rka` | 镜像仓库；使用发布包时设为 `ghcr.io/hujm2023/rka` |
 | `RKA_IMAGE_TAG` | `local` | 应用镜像 tag；升级/回退时固定到已验证版本 |
 | `RKA_DATA_HOST_DIR` | `./data` | 宿主机数据根路径（bind mount 源） |
 | `COMPOSE_PROFILES` | 空 | 设置为 `gateway` 启用 Magpie；DeepTutor 与 Embedding 默认启动 |

@@ -1,5 +1,8 @@
 # RKA · 架构师学习室
 
+[![CI](https://github.com/hujm2023/rka/actions/workflows/ci.yml/badge.svg)](https://github.com/hujm2023/rka/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/hujm2023/rka/actions/workflows/codeql.yml/badge.svg)](https://github.com/hujm2023/rka/actions/workflows/codeql.yml)
+
 面向软考高级「系统架构设计师」的学习平台，将资料阅读、章节练习、错题复习、案例与论文写作、AI 辅导整合到同一个学习空间。
 
 **阅读原文 → 练习关联题目 → 对照解析 → 回到知识点 → 复习巩固。**
@@ -40,3 +43,5 @@ scripts/    内容处理、开发和运维工具
 ## 资料来源
 
 学习资料与题库来自 `ruankao-architect-practice`、`ruankao-architect-notes` 和 `awesome-ruankao`，保留原文及来源声明。各来源的许可证分别适用，使用和分发前请阅读[资料来源与许可](content/README.md)。
+
+应用代码采用 [MIT](LICENSE)。参与改进见[贡献指南](CONTRIBUTING.md)，发布流程与镜像使用见[发布指南](RELEASING.md)。

@@ -1,0 +1,19 @@
+#!/usr/bin/env python3
+"""Run matching PostgreSQL clients for integration tests on a Linux Docker host."""
+import os
+import sys
+from pathlib import Path
+
+name = Path(sys.argv[0]).name
+if name not in {"pg_dump", "pg_restore"}:
+    raise SystemExit("Invoke through pg_dump or pg_restore")
+command = ["docker", "run", "--rm", "-i", "--network", "host", "-e", "PGPASSWORD"]
+mounted = set()
+for argument in sys.argv[1:]:
+    if argument.startswith("/") and Path(argument).is_file():
+        directory = str(Path(argument).resolve().parent)
+        if directory not in mounted:
+            command += ["--mount", f"type=bind,source={directory},target={directory},readonly"]
+            mounted.add(directory)
+command += ["--entrypoint", name, "postgres:17.6-alpine", *sys.argv[1:]]
+os.execvp(command[0], command)

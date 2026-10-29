@@ -39,5 +39,16 @@
     "typescript": "^5.0.0",
     "vite": "^8.0.0",
     "vitest": "latest"
-  }
+  },
+  "description": "Web frontend for the RKA software architecture exam study platform",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hujm2023/rka.git",
+    "directory": "frontend"
+  },
+  "bugs": {
+    "url": "https://github.com/hujm2023/rka/issues"
+  },
+  "homepage": "https://github.com/hujm2023/rka"
 }

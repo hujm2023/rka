@@ -4,7 +4,7 @@
 # The runtime image is postgres:17-alpine because the backup and restore
 # commands need pg_dump/pg_restore matching the database major version.
 
-FROM node:22.23.3-alpine AS web
+FROM --platform=$BUILDPLATFORM node:22.23.3-alpine AS web
 WORKDIR /build
 COPY frontend/package.json frontend/package-lock.json ./
 RUN npm ci --no-audit --no-fund
@@ -13,13 +13,15 @@ COPY frontend/src ./src
 COPY frontend/public ./public
 RUN npm run build
 
-FROM golang:1.25-alpine AS gobuild
+FROM --platform=$BUILDPLATFORM golang:1.25-alpine AS gobuild
 WORKDIR /src
 COPY backend/go.mod backend/go.sum ./
 RUN go mod download
 COPY backend/cmd ./cmd
 COPY backend/internal ./internal
-RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/rka ./cmd/rka
+ARG TARGETOS
+ARG TARGETARCH
+RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -trimpath -ldflags="-s -w" -o /out/rka ./cmd/rka
 
 FROM postgres:17.6-alpine AS runtime
 RUN apk add --no-cache ca-certificates tzdata
@@ -27,6 +29,7 @@ WORKDIR /app
 COPY --from=gobuild /out/rka /usr/local/bin/rka
 COPY --from=web /build/dist ./dist
 COPY content ./content
+COPY LICENSE ./LICENSE
 COPY docker/rka.env.example ./deploy/rka.env.example
 ENV RKA_ADDR=0.0.0.0:8080 \
     RKA_STATIC_DIR=/app/dist \

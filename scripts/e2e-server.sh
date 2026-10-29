@@ -22,7 +22,7 @@ admin_email="${RKA_E2E_ADMIN_EMAIL:-admin@example.com}"
 admin_password="${RKA_E2E_ADMIN_PASSWORD:-rka-e2e-admin-password}"
 admin_name="${RKA_E2E_ADMIN_NAME:-端到端管理员}"
 
-if ! docker ps --format '{{.Names}}' | grep -qx "$db_container"; then
+if [ "$(docker inspect -f '{{.State.Running}}' "$db_container" 2>/dev/null || true)" != "true" ]; then
   echo "development database is not running; start it with scripts/dev-db.sh" >&2
   exit 1
 fi

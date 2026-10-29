@@ -1,0 +1,22 @@
+name: 功能建议
+description: 提出学习场景或产品改进建议
+title: '[Feature] '
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: 希望解决什么问题
+      description: 描述学习场景以及现有方式的限制
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: 建议的使用方式
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: 替代方案或补充说明

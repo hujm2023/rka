@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 部署与启动
+    url: https://github.com/hujm2023/rka/blob/main/docker/README.md
+    about: 先检查启动步骤和常见故障
+  - name: 安全报告
+    url: https://github.com/hujm2023/rka/blob/main/SECURITY.md
+    about: 请勿公开未修复漏洞的完整利用细节

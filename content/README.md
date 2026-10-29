@@ -90,6 +90,6 @@ npm --prefix frontend run build
 - `awesome-ruankao` 标注 **CC BY-SA 4.0**，真题保留原出题方权利声明，见[原许可](licenses/awesome-ruankao.txt)。
 - 练题台明确区分应用代码和第三方题库授权，见[来源声明](licenses/practice-NOTICE.md)与[原项目许可](licenses/ruankao-architect-practice.txt)。
 
-运行中的应用通过 `/content/licenses/<file>` 提供这些声明下载。来源许可不应混为 RKA 全部内容的统一许可。应用代码与资料的授权范围分别判断；npm 依赖继续遵循各包自身的许可证。对外使用资料时，应同时保留对应来源、署名和原始声明。
+运行中的应用通过 `/content/licenses/<file>` 提供这些声明下载。来源许可不应混为 RKA 全部内容的统一许可。应用代码采用 [MIT](../LICENSE)，本目录学习资料仍按各自来源许可使用；npm 依赖继续遵循各包自身的许可证。对外使用资料时，应同时保留对应来源、署名和原始声明。
 
 [返回项目首页](../README.md)

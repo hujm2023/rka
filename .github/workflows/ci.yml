@@ -1,0 +1,192 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+  workflow_call:
+    inputs:
+      ref:
+        type: string
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  frontend:
+    name: Frontend
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.ref || github.ref }}
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci --no-audit --no-fund
+        working-directory: frontend
+      - run: npm test && npm run build
+        working-directory: frontend
+      - run: make test-legacy
+
+  backend:
+    name: Backend
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:17.6-alpine
+        env:
+          POSTGRES_USER: rka
+          POSTGRES_PASSWORD: rka-ci-test
+          POSTGRES_DB: postgres
+        ports: ['55432:5432']
+        options: >-
+          --health-cmd "pg_isready -U rka -d postgres"
+          --health-interval 5s --health-timeout 3s --health-retries 20
+    env:
+      RKA_TEST_DATABASE_URL: postgres://rka:rka-ci-test@127.0.0.1:55432/postgres?sslmode=disable
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.ref || github.ref }}
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: backend/go.mod
+          cache-dependency-path: backend/go.sum
+      - name: PostgreSQL 17 clients
+        run: |
+          docker pull postgres:17.6-alpine
+          echo "$PWD/.github/scripts" >> "$GITHUB_PATH"
+      - name: Format, build and vet
+        run: |
+          test -z "$(gofmt -l backend/cmd backend/internal)"
+          make build vet
+      - name: Race and integration tests (no skipped tests)
+        run: |
+          mkdir -p data/ci
+          go -C backend test -race -p 1 -count=1 -json ./... | tee data/ci/go-tests.jsonl
+          python3 .github/scripts/check-go-results.py data/ci/go-tests.jsonl
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: failure()
+        with:
+          name: go-test-results
+          path: data/ci/go-tests.jsonl
+          retention-days: 7
+          if-no-files-found: ignore
+
+  browser:
+    name: Browser
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:17.6-alpine
+        env:
+          POSTGRES_USER: rka
+          POSTGRES_PASSWORD: rka-ci-test
+          POSTGRES_DB: postgres
+        ports: ['55432:5432']
+        options: >-
+          --health-cmd "pg_isready -U rka -d postgres"
+          --health-interval 5s --health-timeout 3s --health-retries 20
+    env:
+      RKA_TEST_DB_PASSWORD: rka-ci-test
+      RKA_TEST_DB_PORT: '55432'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.ref || github.ref }}
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: backend/go.mod
+          cache-dependency-path: backend/go.sum
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci --no-audit --no-fund
+        working-directory: frontend
+      - run: npx playwright install --with-deps chromium
+        working-directory: frontend
+      - run: make e2e
+        env:
+          RKA_TEST_DB_CONTAINER: ${{ job.services.postgres.id }}
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: failure()
+        with:
+          name: playwright-traces
+          path: frontend/test-results/
+          retention-days: 7
+          if-no-files-found: ignore
+
+  container:
+    name: Container
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      POSTGRES_PASSWORD: rka-ci-compose-test
+      RKA_IMAGE_TAG: ci
+      RKA_PORT: '18080'
+      RKA_DATA_HOST_DIR: ${{ github.workspace }}/data/ci-compose
+      RKA_DEEPTUTOR_URL: ''
+      RKA_EMBEDDING_URL: ''
+      RKA_ADMIN_EMAIL: ci@example.com
+      RKA_ADMIN_PASSWORD: ci-admin-password-only
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.ref || github.ref }}
+          persist-credentials: false
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      - uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          file: docker/Dockerfile
+          load: true
+          tags: rka:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Compose startup and HTTP smoke test
+        run: |
+          docker compose config --quiet
+          docker compose -p rka-ci up -d --no-build --wait --wait-timeout 180 postgres app worker
+          python3 .github/scripts/smoke.py
+      - name: Failure logs
+        if: failure()
+        run: docker compose -p rka-ci logs --no-color --tail=100 app worker init postgres
+      - name: Cleanup
+        if: always()
+        run: docker compose -p rka-ci down --volumes --remove-orphans
+
+  workflow:
+    name: Workflow validation
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.ref || github.ref }}
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: backend/go.mod
+          cache-dependency-path: backend/go.sum
+      - run: go install github.com/rhysd/actionlint/cmd/actionlint@v1.7.12
+      - run: actionlint -color
+      - run: python3 .github/scripts/check-release.py --self-test
+      - run: git diff --check
