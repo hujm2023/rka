@@ -246,3 +246,34 @@ test('practice works over plain HTTP when crypto.randomUUID is unavailable', asy
   await expect(page.locator('.question-topline')).toContainText('2');
   await expect(page.getByRole('radio').first()).toBeVisible();
 });
+
+test('a delayed position response preserves a newly selected answer through reload', async ({page}) => {
+  await signInIsolatedLearner(page, 'delayed-position');
+  await page.goto('/practice');
+  await startPractice(page);
+  await chooseOption(page, 'B');
+  await submitAnswer(page);
+  let release!: () => void;
+  let captured!: () => void;
+  const gate = new Promise<void>(resolve => { release = resolve; });
+  const requested = new Promise<void>(resolve => { captured = resolve; });
+  let held = false;
+  await page.route('**/api/practice/sessions/*', async route => {
+    if (route.request().method() !== 'PATCH' || held) return route.continue();
+    held = true;
+    const response = await route.fetch();
+    captured();
+    await gate;
+    await route.fulfill({response});
+  });
+  await page.getByRole('button', {name: '下一题', exact: true}).click();
+  await requested;
+  await chooseOption(page, 'D');
+  const response = page.waitForResponse(r => r.request().method() === 'PATCH' && r.url().includes('/api/practice/sessions/'));
+  release();
+  await response;
+  await expect(page.getByRole('radio').nth(3)).toHaveAttribute('aria-checked', 'true');
+  await page.reload();
+  await expect(page.locator('.question-topline')).toContainText('2');
+  await expect(page.getByRole('radio').nth(3)).toHaveAttribute('aria-checked', 'true');
+});

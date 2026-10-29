@@ -129,3 +129,24 @@ test('mobile chapter navigation opens the table of contents and locates a sectio
   await expect.poll(async () => page.locator(`[id="${section.id}"]`).evaluate((element) => Math.round(element.getBoundingClientRect().top))).toBeLessThan(180);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
+
+test('math rendering and its stylesheet stay aligned in both themes', async ({page}) => {
+  await signInIsolatedLearner(page, 'math-styles');
+  const catalog = await catalogOf(page);
+  const material = catalog.materials[0];
+  await page.route(`**/api/content/materials/${material.id}/content*`, async route => {
+    const response = await route.fetch();
+    const content = await response.json();
+    await route.fulfill({response, json: {...content, content: '# Math\n\nInline $a+b$\n\n$$\n\\frac{a+b}{c+d}\n$$'}});
+  });
+  await page.goto(`/knowledge?id=${material.id}`);
+  for (const theme of ['light', 'dark']) {
+    if (theme === 'dark') await page.getByRole('button', {name: '切换深色模式', exact: true}).click();
+    const math = page.locator('.source-document .katex-display');
+    await expect(math).toBeVisible();
+    await expect(math.locator('.katex-base').first()).toHaveCSS('display', 'inline-block');
+    await expect(math.locator('.katex-mathml')).toHaveCSS('position', 'absolute');
+    expect(await math.locator('.frac-line').evaluate(el => parseFloat(getComputedStyle(el).borderBottomWidth))).toBeGreaterThan(0);
+    await expect(page.locator('.katex-error')).toHaveCount(0);
+  }
+});
