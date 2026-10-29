@@ -30,11 +30,6 @@ esac
 
 mkdir -p "$data_dir"
 if docker ps -a --format '{{.Names}}' | grep -qx "$name"; then
-  actual="$(docker inspect -f '{{.Config.Image}}' "$name")"
-  if [ "$actual" != 'postgres:18.6-alpine' ]; then
-    echo "Existing $name uses $actual. Use a new RKA_TEST_DB_CONTAINER and data directory, or migrate its data before recreating it." >&2
-    exit 1
-  fi
   docker start "$name" >/dev/null
 else
   docker run -d --name "$name" \

@@ -60,9 +60,7 @@ services:
       POSTGRES_DB: rka
       PGDATA: /var/lib/postgresql/18/docker
     volumes:
-      # Keep the existing host layout, but mount PGDATA directly. A restored
-      # parent directory may be root-owned 0750 and cannot be traversed after
-      # the PostgreSQL entrypoint drops privileges.
+      # Persist PostgreSQL 18 data directly at PGDATA inside the project.
       - ${RKA_DATA_HOST_DIR:-./data}/postgres/pgdata:/var/lib/postgresql/18/docker
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U rka -d rka"]

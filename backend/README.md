@@ -24,8 +24,6 @@ make test                # 需要 PostgreSQL；每个测试创建并清理独立
 make test-platform       # 跨模块验收
 ```
 
-已有旧主版本的开发数据库时，请指定新的 `RKA_TEST_DB_CONTAINER`、`RKA_TEST_DB_PORT` 和 `RKA_TEST_DB_DATA_DIR` 启动独立实例，或先完成迁移。
-
 测试库连接可通过 `RKA_TEST_DATABASE_URL` 指定；备份往返测试需要匹配 PostgreSQL 主版本的 `pg_dump` / `pg_restore`。数据库或客户端工具缺失时部分测试会跳过，验收时应检查测试输出。
 
 开发启动：
