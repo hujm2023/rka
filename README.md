@@ -1,9 +1,9 @@
-# RKA · 架构师学习室
+# 软考高级-系统架构设计师
 
 [![CI](https://github.com/hujm2023/rka/actions/workflows/ci.yml/badge.svg)](https://github.com/hujm2023/rka/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/hujm2023/rka/actions/workflows/codeql.yml/badge.svg)](https://github.com/hujm2023/rka/actions/workflows/codeql.yml)
 
-面向软考高级「系统架构设计师」的学习平台，将资料阅读、章节练习、错题复习、案例与论文写作、AI 辅导整合到同一个学习空间。
+RKA 是面向软考高级「系统架构设计师」的学习平台，将资料阅读、章节练习、错题复习、案例与论文写作、AI 辅导整合到同一个学习空间。
 
 **阅读原文 → 练习关联题目 → 对照解析 → 回到知识点 → 复习巩固。**
 

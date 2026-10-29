@@ -6,7 +6,7 @@ RKA 通过 GitHub Actions 验证变更，通过 GHCR 发布应用镜像，通过
 
 - PR 和 `main` 提交运行 CI：前端、Go race 与真实数据库测试、浏览器测试、容器启动及工作流校验。
 - CodeQL 检查 Go 与 TypeScript，并每周运行。
-- Dependabot 每周检查 Go、npm、Docker、Compose 和 Actions 更新，以 PR 提交，不自动合并。
+- Dependabot 每周检查 Go、npm、Docker、Compose 和 Actions 更新，以 PR 提交，不自动合并；安全更新也以 PR 提议修复。
 - 第三方 Actions 固定到完整提交 SHA，默认令牌只读；发布任务才申请 Release 和 Packages 写权限。
 - 测试报告与失败 trace 作为短期 Actions artifacts 保存，不提交 Git，也不上传运行数据目录。
 

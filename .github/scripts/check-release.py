@@ -40,5 +40,5 @@ subprocess.run(["git", "merge-base", "--is-ancestor", "HEAD", "origin/main"], ch
 repository = os.environ["GITHUB_REPOSITORY"]
 assert re.fullmatch(r"[\w.-]+/[\w.-]+", repository)
 with open(os.environ["GITHUB_OUTPUT"], "a") as output:
-    output.write(f"tag={tag}\nprerelease={str(prerelease).lower()}\nimage=ghcr.io/{repository.lower()}\n")
+    output.write(f"tag={tag}\nprerelease={str(prerelease).lower()}\nimage=ghcr.io/{repository.lower()}\ncommit={git('rev-parse', 'HEAD')}\n")
 print(f"Validated {tag} on main history")

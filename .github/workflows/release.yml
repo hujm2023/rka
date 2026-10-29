@@ -25,6 +25,7 @@ jobs:
       tag: ${{ steps.version.outputs.tag }}
       prerelease: ${{ steps.version.outputs.prerelease }}
       image: ${{ steps.version.outputs.image }}
+      commit: ${{ steps.version.outputs.commit }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -81,6 +82,7 @@ jobs:
             org.opencontainers.image.title=RKA
             org.opencontainers.image.description=Software architect exam study platform; see bundled content licenses for learning materials.
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.revision=${{ needs.prepare.outputs.commit }}
       - uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         id: image
         with:

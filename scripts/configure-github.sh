@@ -10,6 +10,10 @@ gh api --method PUT "repos/$repo/topics" --input - --silent <<'JSON'
 JSON
 gh label create dependencies --repo "$repo" --color 0366d6 --description 'Dependency updates' --force
 gh api --method PUT "repos/$repo/vulnerability-alerts" --silent
+gh api --method PUT "repos/$repo/automated-security-fixes" --silent
+gh api --method PUT "repos/$repo/actions/permissions/workflow" --input - --silent <<'JSON'
+{"default_workflow_permissions":"read","can_approve_pull_request_reviews":false}
+JSON
 gh api --method PUT "repos/$repo/private-vulnerability-reporting" --silent
 gh api --method PUT "repos/$repo/branches/main/protection" --input .github/branch-protection.json --silent
 printf 'Repository settings applied: %s\n' "$repo"
