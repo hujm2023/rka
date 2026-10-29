@@ -138,7 +138,7 @@ step "11. consistency backup"
 scripts/backup.sh -p "$project" -f docker-compose.yml >/tmp/rka-backup.txt
 BACKUP_PATH=$(tail -n 1 /tmp/rka-backup.txt | tr -d '[:space:]')
 echo "backup path (container): $BACKUP_PATH"
-docker run --rm -v "$data_dir:/data" alpine:3.20 test -f "${BACKUP_PATH}/db.dump" \
+docker run --rm -v "$data_dir:/data" alpine:3.24.3 test -f "${BACKUP_PATH}/db.dump" \
   || fail "backup did not produce db.dump at $BACKUP_PATH"
 BACKUP_ID=$(basename "$BACKUP_PATH")
 step "12. isolated verification of the backup"
@@ -150,7 +150,7 @@ compose run --rm -T app restore "$BACKUP_ID" /data/restore-drill >/tmp/rka-resto
 tail -n 2 /tmp/rka-restore.txt
 # The containers run as root inside the bind mount, so host-side file checks
 # must go through a container as well.
-docker run --rm -v "$data_dir:/data" alpine:3.20 test -f /data/restore-drill/db.dump \
+docker run --rm -v "$data_dir:/data" alpine:3.24.3 test -f /data/restore-drill/db.dump \
   || fail "restore did not produce db.dump"
 
 step "14. start a second stack on the restored data root"
