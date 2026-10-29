@@ -68,10 +68,10 @@
 
 | 变量 | 默认 | 说明 |
 | --- | --- | --- |
-| `RKA_DEEPTUTOR_IMAGE` | `ghcr.io/hkuds/deeptutor:1.6.15` | 教学服务镜像（固定 tag，勿用 latest） |
-| `RKA_EMBEDDING_IMAGE` | `ghcr.io/huggingface/text-embeddings-inference:cpu-1.9` | Embedding 镜像 |
+| `RKA_DEEPTUTOR_IMAGE` | `ghcr.io/hkuds/deeptutor:1.7.0` | 教学服务镜像（固定 tag，勿用 latest） |
+| `RKA_EMBEDDING_IMAGE` | `ghcr.io/huggingface/text-embeddings-inference:cpu-1.9.4` | Embedding 镜像 |
 | `RKA_EMBEDDING_MODEL_ID` | `Xenova/bge-small-zh-v1.5` | TEI 加载的模型 |
-| `RKA_MAGPIE_IMAGE` | `ghcr.io/yetone/magpie:0.1.1893` | 容器内网关镜像 |
+| `RKA_MAGPIE_IMAGE` | `ghcr.io/yetone/magpie:0.1.1997` | 容器内网关镜像 |
 | `MAGPIE_WEB_KEY` | 空 | Magpie Web UI 的 key；启用 gateway profile 时必填 |
 
 ## Compose 变量与本地运行变量

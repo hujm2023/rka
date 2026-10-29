@@ -53,17 +53,15 @@ x-app: &app
 
 services:
   postgres:
-    image: postgres:17.6-alpine
+    image: postgres:18.6-alpine
     environment:
       POSTGRES_USER: rka
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in docker/rka.env}
       POSTGRES_DB: rka
-      PGDATA: /var/lib/postgresql/data/pgdata
+      PGDATA: /var/lib/postgresql/18/docker
     volumes:
-      # Keep the existing host layout, but mount PGDATA directly. A restored
-      # parent directory may be root-owned 0750 and cannot be traversed after
-      # the PostgreSQL entrypoint drops privileges.
-      - ${RKA_DATA_HOST_DIR:-./data}/postgres/pgdata:/var/lib/postgresql/data/pgdata
+      # Persist PostgreSQL 18 data directly at PGDATA inside the project.
+      - ${RKA_DATA_HOST_DIR:-./data}/postgres/pgdata:/var/lib/postgresql/18/docker
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U rka -d rka"]
       interval: 5s
@@ -117,7 +115,7 @@ services:
   # Local Chinese embedding service (TEI), started by default.
   # ONNX Chinese model, 512 dimensions; cached under the project data root.
   embedding:
-    image: ${RKA_EMBEDDING_IMAGE:-ghcr.io/huggingface/text-embeddings-inference:cpu-1.9}
+    image: ${RKA_EMBEDDING_IMAGE:-ghcr.io/huggingface/text-embeddings-inference:cpu-1.9.4}
     command: ["--model-id", "${RKA_EMBEDDING_MODEL_ID:-Xenova/bge-small-zh-v1.5}", "--port", "80"]
     volumes:
       - ${RKA_DATA_HOST_DIR:-./data}/cache:/data
@@ -134,10 +132,10 @@ services:
     restart: unless-stopped
 
   # Independent teaching service, started by default.
-  # Verified against ghcr.io/hkuds/deeptutor:1.6.15: Next.js on 3782, FastAPI on
+  # Verified against ghcr.io/hkuds/deeptutor:1.7.0: Next.js on 3782, FastAPI on
   # 8001, health at /health/ready on 8001, all persistent state under /app/data.
   deeptutor:
-    image: ${RKA_DEEPTUTOR_IMAGE:-ghcr.io/hkuds/deeptutor:1.6.15}
+    image: ${RKA_DEEPTUTOR_IMAGE:-ghcr.io/hkuds/deeptutor:1.7.0}
     depends_on:
       deeptutor-init:
         condition: service_completed_successfully
@@ -157,7 +155,7 @@ services:
   # One-shot: DeepTutor authentication is configured by file, not environment.
   # It writes auth.json before the teaching service accepts users.
   deeptutor-init:
-    image: ${RKA_DEEPTUTOR_IMAGE:-ghcr.io/hkuds/deeptutor:1.6.15}
+    image: ${RKA_DEEPTUTOR_IMAGE:-ghcr.io/hkuds/deeptutor:1.7.0}
     user: "0:0"
     entrypoint: ["/bin/sh", "-c"]
     command:
@@ -173,10 +171,10 @@ services:
     restart: "no"
 
   # Containerised model gateway. Enabled with COMPOSE_PROFILES=gateway.
-  # Verified against ghcr.io/yetone/magpie:0.1.1893. Calls from another container
+  # Verified against ghcr.io/yetone/magpie:0.1.1997. Calls from another container
   # need a real gateway key; loopback token assumptions do not carry over.
   magpie:
-    image: ${RKA_MAGPIE_IMAGE:-ghcr.io/yetone/magpie:0.1.1893}
+    image: ${RKA_MAGPIE_IMAGE:-ghcr.io/yetone/magpie:0.1.1997}
     profiles: ["gateway"]
     depends_on:
       magpie-init:
@@ -197,7 +195,7 @@ services:
     restart: unless-stopped
 
   magpie-init:
-    image: postgres:17.6-alpine
+    image: postgres:18.6-alpine
     profiles: ["gateway"]
     user: "0:0"
     entrypoint: ["/bin/sh", "-c"]

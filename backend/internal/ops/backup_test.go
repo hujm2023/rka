@@ -47,7 +47,7 @@ func requirePgTools(t *testing.T) {
 	dump := pgTool(t, "RKA_PG_DUMP", "pg_dump")
 	restore := pgTool(t, "RKA_PG_RESTORE", "pg_restore")
 	if dump == "" || restore == "" {
-		t.Skip("pg_dump/pg_restore 在宿主机与 PATH 中均不可用；按任务约定跳过真实备份/恢复测试并记录缺口（容器运行镜像 postgres:17.6-alpine 自带这两个工具）")
+		t.Skip("pg_dump/pg_restore 在宿主机与 PATH 中均不可用；按任务约定跳过真实备份/恢复测试并记录缺口（容器运行镜像 postgres:18.6-alpine 自带这两个工具）")
 	}
 }
 

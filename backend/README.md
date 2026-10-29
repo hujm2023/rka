@@ -1,6 +1,6 @@
 # RKA 后端
 
-独立 Go 模块（`go.mod` / `go.sum`，Go 1.25+），模块名保持 `rka`。HTTP 服务、Worker、运维 CLI 和数据库迁移全部在这里维护。
+独立 Go 模块（`go.mod` / `go.sum`，Go 1.27.3+），模块名保持 `rka`。HTTP 服务、Worker、运维 CLI 和数据库迁移全部在这里维护。
 
 ```text
 backend/

@@ -17,7 +17,7 @@ import (
 	"time"
 )
 
-// DeepTutor v1.6.15 real protocol endpoints. The pinned server exposes its API
+// DeepTutor 1.6/1.7 protocol endpoints. The pinned server exposes its API
 // on port 8001 (not the Next.js 3782 frontend). Turns are created over
 // WebSocket protocol v2.0; there is no REST turn-creation endpoint and no
 // static API token.
@@ -33,7 +33,7 @@ type dtTokenEntry struct {
 	expiresAt time.Time
 }
 
-// deepTutorWSBackend speaks the measured DeepTutor 1.6.15 protocol: an admin
+// deepTutorWSBackend speaks the measured DeepTutor 1.6/1.7 protocol: an admin
 // logs in for a JWT, creates one standard user per RKA learner, and each turn is
 // started/subscribed over /ws with protocol_version "2.0".
 type deepTutorWSBackend struct {

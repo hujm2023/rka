@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strings"
 
 	"rka/internal/config"
@@ -20,7 +21,23 @@ func (d *deepTutorWSBackend) jsonCall(ctx context.Context, method, path string, 
 	}
 	defer response.Body.Close()
 	if response.StatusCode < 200 || response.StatusCode >= 300 {
-		return &UpstreamError{Code: "teaching_api_failed", Message: fmt.Sprintf("DeepTutor %s 返回 %d", path, response.StatusCode), Status: response.StatusCode}
+		status := response.StatusCode
+		// DeepTutor 1.7 wraps a missing knowledge base in HTTP 500. Normalize
+		// only this exact resource error; unrelated server failures must never
+		// trigger a new upload or be reported as a successfully built index.
+		const prefix = "/api/knowledge-bases/"
+		if status == http.StatusInternalServerError && method == http.MethodGet && strings.HasPrefix(path, prefix) {
+			name, decodeErr := url.PathUnescape(strings.TrimPrefix(path, prefix))
+			var failure struct {
+				Detail string `json:"detail"`
+			}
+			if decodeErr == nil && name != "" && !strings.Contains(name, "/") &&
+				json.NewDecoder(io.LimitReader(response.Body, 2048)).Decode(&failure) == nil &&
+				failure.Detail == fmt.Sprintf("Knowledge base '%s' not found", name) {
+				status = http.StatusNotFound
+			}
+		}
+		return &UpstreamError{Code: "teaching_api_failed", Message: fmt.Sprintf("DeepTutor %s 返回 %d", path, status), Status: status}
 	}
 	if out != nil {
 		return json.NewDecoder(io.LimitReader(response.Body, 4<<20)).Decode(out)

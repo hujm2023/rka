@@ -63,7 +63,7 @@ func New(deps Deps) *Service {
 	if url := strings.TrimSpace(deps.Config.Teaching.DeepTutorURL); url != "" {
 		if deps.Config.Teaching.DeepTutorToken != "" {
 			// Static-token mode is a test double / legacy deployment. The pinned
-			// DeepTutor 1.6.15 has no static API token and uses JWT + WebSocket.
+			// DeepTutor 1.6/1.7 has no static API token and uses JWT + WebSocket.
 			service.deepTutor = newDeepTutorBackend(
 				url,
 				deps.Config.Teaching.DeepTutorToken,
