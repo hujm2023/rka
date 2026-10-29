@@ -9,7 +9,7 @@ backend/
 │   ├── store/migrations/ 内嵌 SQL 迁移
 │   └── platform/         跨模块 API 验收
 ├── legacy/               旧 Node 转发器，仅供历史对照
-├── bin/                  本机构建输出，不提交 Git
+├── bin/                  本地构建输出，不提交 Git
 ├── go.mod / go.sum       Go 依赖
 └── Makefile              后端开发、测试、运行入口
 ```
@@ -26,7 +26,7 @@ make test-platform       # 跨模块验收
 
 测试库连接可通过 `RKA_TEST_DATABASE_URL` 指定；备份往返测试需要匹配 PostgreSQL 主版本的 `pg_dump` / `pg_restore`。数据库或客户端工具缺失时部分测试会跳过，验收时应检查测试输出。
 
-本机启动：
+开发启动：
 
 ```bash
 export RKA_DATABASE_URL='<scripts/dev-db.sh 输出的开发库连接串>'
@@ -39,4 +39,4 @@ make serve               # 127.0.0.1:8080
 
 只做 Go 构建或 API 开发不需要 Node。需要由 Go 提供完整页面时，先在仓库根目录运行 `make web`。生产镜像统一由 [docker/Dockerfile](../docker/Dockerfile) 构建；Compose 和运行数据继续位于仓库根目录。
 
-接口见 [API 合同](API.md)，生产运维见 [运维手册](../docker/README.md)。
+接口见 [API 合同](API.md)，生产运维见 [部署启动](../docker/README.md)和[运维指南](../docker/OPERATIONS.md)。
