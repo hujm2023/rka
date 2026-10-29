@@ -14,7 +14,7 @@ make typecheck frontend-test
 make e2e
 ```
 
-Go 集成测试需要 PostgreSQL，备份测试还需要 PostgreSQL 17 客户端。CI 会提供这些依赖，并将任何测试跳过视为失败。浏览器测试与容器检查均运行实际应用；模型调用在测试中使用受控替身，不需要真实模型密钥。
+Go 集成测试需要 PostgreSQL，备份测试还需要 PostgreSQL 18 客户端。CI 会提供这些依赖，并将任何测试跳过视为失败。浏览器测试与容器检查均运行实际应用；模型调用在测试中使用受控替身，不需要真实模型密钥。
 
 ## 提交 Pull Request
 

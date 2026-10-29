@@ -156,9 +156,9 @@ docker run --rm -v "$data_dir:/data" alpine:3.20 test -f /data/restore-drill/db.
 step "14. start a second stack on the restored data root"
 docker rm -f rka-verify-pg2 >/dev/null 2>&1 || true
 docker run -d --name rka-verify-pg2 -e POSTGRES_USER=rka -e POSTGRES_PASSWORD="$db_password" -e POSTGRES_DB=rka_restore \
-  -p "127.0.0.1:${pg_restore_port}:5432" postgres:17.6-alpine >/dev/null
+  -p "127.0.0.1:${pg_restore_port}:5432" postgres:18.6-alpine >/dev/null
 for _ in $(seq 1 60); do docker exec rka-verify-pg2 pg_isready -U rka -d rka_restore >/dev/null 2>&1 && break; sleep 1; done
-docker run --rm --network host -e PGPASSWORD="$db_password" -v "$data_dir/restore-drill:/restore" postgres:17.6-alpine \
+docker run --rm --network host -e PGPASSWORD="$db_password" -v "$data_dir/restore-drill:/restore" postgres:18.6-alpine \
   pg_restore -h 127.0.0.1 -p "$pg_restore_port" -U rka -d rka_restore --no-owner --no-privileges /restore/db.dump
 docker rm -f rka-verify-app2 >/dev/null 2>&1 || true
 docker run -d --name rka-verify-app2 --network host \

@@ -1,6 +1,6 @@
 # RKA 后端
 
-独立 Go 模块（`go.mod` / `go.sum`，Go 1.25+），模块名保持 `rka`。HTTP 服务、Worker、运维 CLI 和数据库迁移全部在这里维护。
+独立 Go 模块（`go.mod` / `go.sum`，Go 1.27.3+），模块名保持 `rka`。HTTP 服务、Worker、运维 CLI 和数据库迁移全部在这里维护。
 
 ```text
 backend/
@@ -23,6 +23,8 @@ make vet
 make test                # 需要 PostgreSQL；每个测试创建并清理独立数据库
 make test-platform       # 跨模块验收
 ```
+
+已有旧主版本的开发数据库时，请指定新的 `RKA_TEST_DB_CONTAINER`、`RKA_TEST_DB_PORT` 和 `RKA_TEST_DB_DATA_DIR` 启动独立实例，或先完成迁移。
 
 测试库连接可通过 `RKA_TEST_DATABASE_URL` 指定；备份往返测试需要匹配 PostgreSQL 主版本的 `pg_dump` / `pg_restore`。数据库或客户端工具缺失时部分测试会跳过，验收时应检查测试输出。
 

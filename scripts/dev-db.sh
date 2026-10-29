@@ -8,7 +8,7 @@
 set -euo pipefail
 
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-name="rka-dev-postgres"
+name="${RKA_TEST_DB_CONTAINER:-rka-dev-postgres}"
 port="${RKA_TEST_DB_PORT:-55432}"
 # Backend Go commands now walk only backend/, so test persistence can remain
 # under the project data root. An already-created container keeps its mount.
@@ -30,16 +30,21 @@ esac
 
 mkdir -p "$data_dir"
 if docker ps -a --format '{{.Names}}' | grep -qx "$name"; then
+  actual="$(docker inspect -f '{{.Config.Image}}' "$name")"
+  if [ "$actual" != 'postgres:18.6-alpine' ]; then
+    echo "Existing $name uses $actual. Use a new RKA_TEST_DB_CONTAINER and data directory, or migrate its data before recreating it." >&2
+    exit 1
+  fi
   docker start "$name" >/dev/null
 else
   docker run -d --name "$name" \
     -e POSTGRES_USER=rka \
     -e POSTGRES_PASSWORD="$password" \
     -e POSTGRES_DB=rka \
-    -e PGDATA=/var/lib/postgresql/data/pgdata \
+    -e PGDATA=/var/lib/postgresql/18/docker \
     -p "127.0.0.1:${port}:5432" \
-    -v "$data_dir:/var/lib/postgresql/data" \
-    postgres:17.6-alpine >/dev/null
+    -v "$data_dir/pgdata:/var/lib/postgresql/18/docker" \
+    postgres:18.6-alpine >/dev/null
 fi
 
 for _ in $(seq 1 60); do

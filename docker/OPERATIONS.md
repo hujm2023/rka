@@ -79,6 +79,14 @@ docker compose --env-file .env.restore -p rka-restored up -d
 
 在新端口检查 `/readyz`，登录原账号，核对作答、草稿和教学记录。确认恢复结果后，再决定是否切换访问入口。不要使用旧二进制直接运行已升级的数据库。
 
+## PostgreSQL 17 升级到 18
+
+当前默认镜像为 PostgreSQL 18.6，备份与恢复客户端也使用 18。已有 PostgreSQL 17 数据目录不能直接交给 18 启动；请先用旧版本应用和数据库执行完整备份及校验。
+
+按上面的「恢复到新实例」流程，将备份恢复到新的数据根，再用新版 Compose 启动**空的 PostgreSQL 18 数据库**并导入 `db.dump`，核对账号、记录和教学文件后切换。原数据根保留用于回退。更新现有 `.env` 中显式设置的 DeepTutor、Embedding、Magpie 镜像版本时，以 `.env.example` 为准，保留真实凭据。
+
+新版本保留宿主机 `data/postgres/pgdata` 的位置，容器内 PGDATA 调整为 `/var/lib/postgresql/18/docker`。若误用旧数据根，PostgreSQL 会因主版本不兼容拒绝启动，不应删除旧目录来绕过错误。
+
 ## 升级
 
 先创建并验证备份，记录当前代码版本、镜像标签与配置。对于从源码构建的部署：
